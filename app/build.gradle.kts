@@ -28,7 +28,7 @@ android {
         val tmdbToken = localProperties.getProperty("TMDB_BEARER_TOKEN") ?: ""
 
         buildConfigField("String", "TMDB_BEARER_TOKEN", "\"$tmdbToken\"")
-        buildConfigField("String", "TMDB_BASE_URL", "\"https://api.themoviedb.org/3\"")
+        buildConfigField("String", "TMDB_BASE_URL", "\"https://api.themoviedb.org\"")
     }
 
     buildTypes {
