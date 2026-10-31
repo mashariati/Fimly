@@ -1,7 +1,16 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(FileInputStream(localPropertiesFile))
+    }
 }
 
 android {
@@ -15,6 +24,11 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val tmdbToken = localProperties.getProperty("TMDB_BEARER_TOKEN") ?: ""
+
+        buildConfigField("String", "TMDB_BEARER_TOKEN", "\"$tmdbToken\"")
+        buildConfigField("String", "TMDB_BASE_URL", "\"https://api.themoviedb.org/3\"")
     }
 
     buildTypes {
@@ -35,6 +49,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

@@ -1,5 +1,6 @@
 package com.fimly.app.di
 
+import com.fimly.app.BuildConfig
 import com.fimly.app.data.network.KtorNetworkDataSource
 import com.fimly.app.data.network.NetworkDataSource
 import io.ktor.client.HttpClient
@@ -10,7 +11,9 @@ import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.header
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -33,11 +36,11 @@ val networkModule = module {
             defaultRequest {
                 url {
                     protocol = URLProtocol.HTTPS
-                    // TODO: Configure base API host
-                    host = ""
+                    host = BuildConfig.TMDB_BASE_URL
                 }
                 contentType(ContentType.Application.Json)
-                // TODO: Inject API Key / Authorization header securely via BuildConfig
+                header(HttpHeaders.Authorization, "Bearer ${BuildConfig.TMDB_BEARER_TOKEN}")
+                header(HttpHeaders.Accept, "application/json")
             }
 
             install(ContentNegotiation) {
@@ -52,7 +55,7 @@ val networkModule = module {
 
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = LogLevel.ALL
+                level = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
             }
         }
     }
