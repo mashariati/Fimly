@@ -3,27 +3,37 @@ package com.fimly.app.presentation.navigation
 import kotlinx.serialization.Serializable
 
 /**
- * Root routes for navigation graphs
+ * Root level destinations (Full-screen flows without Bottom Navigation Bar)
  */
-sealed interface GraphRoute {
-    @Serializable data object AuthGraph : GraphRoute
-    @Serializable data object MainGraph : GraphRoute
+sealed interface RootRoute {
+    @Serializable
+    data object AuthGraph : RootRoute
+
+    @Serializable
+    data object Splash : RootRoute
+
+    @Serializable
+    data object Onboarding : RootRoute
+
+    // The container screen that holds the Scaffold and Bottom Navigation Bar
+    @Serializable
+    data object MainContainer : RootRoute
+
+    // Detail screen is placed at root level so it covers the whole screen (hiding BottomBar naturally)
+    @Serializable
+    data class MovieDetail(val movieId: Int) : RootRoute
 }
 
 /**
- * Screens inside the Auth & Onboarding Graph
+ * Bottom Navigation Bar tab destinations inside MainContainer
  */
-sealed interface AuthScreen {
-    @Serializable data object Splash : AuthScreen
-    @Serializable data object Onboarding : AuthScreen
-}
-/**
- * Screens inside the Main App Graph
- */
-sealed interface AppScreen{
+sealed interface BottomTabRoute {
     @Serializable
-    data object Home: AppScreen
-    @Serializable
-    data class Detail(val carId: String) : AppScreen
-}
+    data object Home : BottomTabRoute
 
+    @Serializable
+    data object Search : BottomTabRoute
+
+    @Serializable
+    data object Favorites : BottomTabRoute
+}

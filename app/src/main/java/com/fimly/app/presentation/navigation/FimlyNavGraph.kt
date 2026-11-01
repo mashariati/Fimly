@@ -1,76 +1,124 @@
 package com.fimly.app.presentation.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fimly.app.presentation.feature.home.HomeScreen
 
 @Composable
 fun FimlyNavGraph(
-    navController: NavHostController = rememberNavController(),
-    isUserLoggedInOrOnboarded: Boolean = false
+    rootNavController: NavHostController = rememberNavController(),
+    isUserOnboarded: Boolean = false
 ) {
-    val rootStartGraph = if (isUserLoggedInOrOnboarded) {
-        GraphRoute.MainGraph
+    val startDestination = if (isUserOnboarded) {
+        RootRoute.MainContainer
     } else {
-        GraphRoute.AuthGraph
+        RootRoute.AuthGraph
     }
-    NavHost(navController = navController, startDestination = rootStartGraph) {
 
-        composable<GraphRoute.AuthGraph> {
-            AuthNavGraph(
-                onAuthFinished = {
-                    navController.navigate(GraphRoute.MainGraph) {
-                        popUpTo(GraphRoute.AuthGraph) { inclusive = true }
-                    }
+    NavHost(
+        navController = rootNavController,
+        startDestination = startDestination
+    ) {
+        // Auth & Onboarding Flow
+        navigation<RootRoute.AuthGraph>(
+            startDestination = RootRoute.Splash
+        ) {
+            composable<RootRoute.Splash> {
+                // SplashScreen(
+                //     onNavigateToOnboarding = {
+                //         rootNavController.navigate(RootRoute.Onboarding) {
+                //             popUpTo(RootRoute.Splash) { inclusive = true }
+                //         }
+                //     }
+                // )
+            }
+
+            composable<RootRoute.Onboarding> {
+                // OnboardingScreen(
+                //     onFinishOnboarding = {
+                //         rootNavController.navigate(RootRoute.MainContainer) {
+                //             popUpTo(RootRoute.AuthGraph) { inclusive = true }
+                //         }
+                //     }
+                // )
+            }
+        }
+
+        // Main Container (Has Scaffold + Bottom Navigation Bar)
+        composable<RootRoute.MainContainer> {
+            MainScaffoldScreen(
+                onNavigateToMovieDetail = { movieId ->
+                    // Navigates using root controller to open Detail full-screen
+                    rootNavController.navigate(RootRoute.MovieDetail(movieId = movieId))
                 }
             )
         }
-        composable<GraphRoute.MainGraph> {
-            MainAppNavGraph()
+
+        // Full-Screen Movie Detail (No BottomBar)
+        composable<RootRoute.MovieDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<RootRoute.MovieDetail>()
+            // DetailScreen(
+            //     movieId = route.movieId,
+            //     onNavigateBack = { rootNavController.navigateUp() }
+            // )
         }
     }
 }
 
+/**
+ * Main screen container that holds the BottomNavigationBar and switches between tabs.
+ */
 @Composable
-fun AuthNavGraph(onAuthFinished: () -> Unit) {
-    val authController = rememberNavController()
-    NavHost(
-        navController = authController,
-        startDestination = AuthScreen.Splash
-    ) {
-        composable<AuthScreen.Splash> {
+fun MainScaffoldScreen(
+    onNavigateToMovieDetail: (Int) -> Unit
+) {
+    // Dedicated NavController for switching between Bottom Bar tabs
+    val tabNavController = rememberNavController()
 
-        }
-
-        composable<AuthScreen.Onboarding> {
-            onAuthFinished()
-        }
-    }
-}
-
-@Composable
-fun MainAppNavGraph() {
-    val mainController = rememberNavController()
-
-    NavHost(
-        navController = mainController,
-        startDestination = AppScreen.Home
-    ) {
-        composable<AppScreen.Home> {
-            HomeScreen(
-//                onNavigateToDetail = { movieId ->
-//                    mainController.navigate(AppScreen.Detail(movieId = movieId))
+    Scaffold(
+        bottomBar = {
+            // TODO:custom BottomNavigationBar composable
+//            tabNavController.navigate(tabRoute) {
+//                // Pop up to the start destination of the graph to avoid building up a large stack of destinations
+//                popUpTo(tabNavController.graph.findStartDestination().id) {
+//                    saveState = true
 //                }
-            )
+//                // Avoid multiple copies of the same destination when reselecting the same item
+//                launchSingleTop = true
+//                // Restore state when reselecting a previously selected item
+//                restoreState = true
+//            }
+            // It will use tabNavController to switch between Home, Search, and Favorites
         }
+    ) { innerPadding ->
+        NavHost(
+            navController = tabNavController,
+            startDestination = BottomTabRoute.Home,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable<BottomTabRoute.Home> {
+                HomeScreen(
+                    // Pass the callback to open Detail screen via rootNavController
+                    // onMovieClick = onNavigateToMovieDetail
+                )
+            }
 
-        composable<AppScreen.Detail> { backStackEntry ->
-            val args = backStackEntry.toRoute<AppScreen.Detail>()
-            // DetailScreen(movieId = args.movieId, onNavigateBack = { mainController.navigateUp() })
+            composable<BottomTabRoute.Search> {
+                // SearchScreen(onMovieClick = onNavigateToMovieDetail)
+            }
+
+            composable<BottomTabRoute.Favorites> {
+                // FavoritesScreen(onMovieClick = onNavigateToMovieDetail)
+            }
         }
     }
 }
