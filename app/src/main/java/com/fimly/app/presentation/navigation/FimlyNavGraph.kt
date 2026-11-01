@@ -12,6 +12,8 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fimly.app.presentation.feature.home.HomeScreen
+import com.fimly.app.presentation.feature.onboarding.OnboardingScreen
+import com.fimly.app.presentation.feature.splash.SplashScreen
 
 @Composable
 fun FimlyNavGraph(
@@ -33,23 +35,24 @@ fun FimlyNavGraph(
             startDestination = RootRoute.Splash
         ) {
             composable<RootRoute.Splash> {
-                // SplashScreen(
-                //     onNavigateToOnboarding = {
-                //         rootNavController.navigate(RootRoute.Onboarding) {
-                //             popUpTo(RootRoute.Splash) { inclusive = true }
-                //         }
-                //     }
-                // )
+                 SplashScreen(
+                     onSplashFinished = {
+                         rootNavController.navigate(RootRoute.Onboarding) {
+                             popUpTo(RootRoute.Splash) { inclusive = true }
+                         }
+                     }
+                 )
             }
 
             composable<RootRoute.Onboarding> {
-                // OnboardingScreen(
-                //     onFinishOnboarding = {
-                //         rootNavController.navigate(RootRoute.MainContainer) {
-                //             popUpTo(RootRoute.AuthGraph) { inclusive = true }
-                //         }
-                //     }
-                // )
+                 OnboardingScreen(
+                     onFinishOnboarding = {
+                         // TODO later: Save true to DataStore here
+                         rootNavController.navigate(RootRoute.MainContainer) {
+                             popUpTo(RootRoute.AuthGraph) { inclusive = true }
+                         }
+                     }
+                 )
             }
         }
 
