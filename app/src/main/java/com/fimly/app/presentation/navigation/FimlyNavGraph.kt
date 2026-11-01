@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,27 +17,24 @@ import com.fimly.app.presentation.feature.splash.SplashScreen
 @Composable
 fun FimlyNavGraph(
     rootNavController: NavHostController = rememberNavController(),
-    isUserOnboarded: Boolean = false
 ) {
-    val startDestination = if (isUserOnboarded) {
-        RootRoute.MainContainer
-    } else {
-        RootRoute.AuthGraph
-    }
-
     NavHost(
         navController = rootNavController,
-        startDestination = startDestination
+        startDestination = RootRoute.StartupGraph
     ) {
-        // Auth & Onboarding Flow
-        navigation<RootRoute.AuthGraph>(
+        navigation<RootRoute.StartupGraph>(
             startDestination = RootRoute.Splash
         ) {
             composable<RootRoute.Splash> {
                  SplashScreen(
-                     onSplashFinished = {
+                     onNavigateToOnboarding = {
                          rootNavController.navigate(RootRoute.Onboarding) {
                              popUpTo(RootRoute.Splash) { inclusive = true }
+                         }
+                     },
+                     onNavigateToMainApp = {
+                         rootNavController.navigate(RootRoute.MainContainer) {
+                             popUpTo(RootRoute.StartupGraph) { inclusive = true }
                          }
                      }
                  )
@@ -47,9 +43,8 @@ fun FimlyNavGraph(
             composable<RootRoute.Onboarding> {
                  OnboardingScreen(
                      onFinishOnboarding = {
-                         // TODO later: Save true to DataStore here
                          rootNavController.navigate(RootRoute.MainContainer) {
-                             popUpTo(RootRoute.AuthGraph) { inclusive = true }
+                             popUpTo(RootRoute.StartupGraph) { inclusive = true }
                          }
                      }
                  )

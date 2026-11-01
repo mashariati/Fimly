@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -22,11 +23,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.fimly.app.R
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun OnboardingScreen(
-    onFinishOnboarding: () -> Unit
+    onFinishOnboarding: () -> Unit,
+    viewModel: OnboardingViewModel = koinViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is OnboardingEffect.NavigateToMainApp -> onFinishOnboarding()
+            }
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,7 +65,7 @@ fun OnboardingScreen(
 
         // Forward Action Button
         FloatingActionButton(
-            onClick = onFinishOnboarding,
+            onClick = { viewModel.handleIntent(OnboardingIntent.CompleteOnboardingClick) },
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {

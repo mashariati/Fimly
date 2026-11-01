@@ -11,22 +11,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fimly.app.R
 import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SplashScreen(
-    onSplashFinished: () -> Unit
+    onNavigateToOnboarding: () -> Unit,
+    onNavigateToMainApp: () -> Unit,
+    viewModel: SplashViewModel = koinViewModel()
 ) {
     val scale = remember { Animatable(0f) }
-
+    val isOnboarded by viewModel.isOnboarded.collectAsStateWithLifecycle()
     LaunchedEffect(key1 = true) {
         scale.animateTo(
             targetValue = 1f,
@@ -36,8 +42,11 @@ fun SplashScreen(
             )
         )
         delay(2000L.milliseconds)
-        // Trigger navigation to Onboarding
-        onSplashFinished()
+        if (isOnboarded == true) {
+            onNavigateToMainApp()
+        } else {
+            onNavigateToOnboarding()
+        }
     }
 
     Box(

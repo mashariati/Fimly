@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 sealed interface RootRoute {
     @Serializable
-    data object AuthGraph : RootRoute
+    data object StartupGraph : RootRoute
 
     @Serializable
     data object Splash : RootRoute
