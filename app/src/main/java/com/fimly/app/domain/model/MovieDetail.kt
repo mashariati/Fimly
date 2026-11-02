@@ -2,10 +2,6 @@ package com.fimly.app.domain.model
 
 import java.util.Locale
 
-data class Genre(
-    val id: Int,
-    val name: String
-)
 
 data class ProductionCompany(
     val id: Int,

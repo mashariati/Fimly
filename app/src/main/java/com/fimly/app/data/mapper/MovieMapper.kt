@@ -1,7 +1,7 @@
 package com.fimly.app.data.mapper
 
 import com.fimly.app.data.network.dto.MovieDto
-import com.fimly.app.data.network.dto.MovieResponseDto
+import com.fimly.app.data.network.dto.MovieListDto
 import com.fimly.app.domain.model.Movie
 
 fun MovieDto.toDomainModel(): Movie? {
@@ -26,6 +26,6 @@ fun MovieDto.toDomainModel(): Movie? {
     )
 }
 
-fun MovieResponseDto.toDomainList(): List<Movie> {
+fun MovieListDto.toDomainList(): List<Movie> {
     return results?.mapNotNull { it?.toDomainModel() } ?: emptyList()
 }

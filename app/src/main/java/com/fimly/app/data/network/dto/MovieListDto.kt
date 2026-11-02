@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class MovieResponseDto(
+data class MovieListDto(
     @SerialName("page") val page: Int? = null,
     @SerialName("results") val results: List<MovieDto?>? = null,
     @SerialName("total_pages") val totalPages: Int? = null,
