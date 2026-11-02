@@ -35,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fimly.app.R
 import com.fimly.app.presentation.feature.detail.DetailScreen
+import com.fimly.app.presentation.feature.favorites.FavoritesScreen
 import com.fimly.app.presentation.feature.home.HomeScreen
 import com.fimly.app.presentation.feature.onboarding.OnboardingScreen
 import com.fimly.app.presentation.feature.search.SearchScreen
@@ -136,7 +137,7 @@ fun MainScaffoldScreen(
             }
 
             composable<BottomTabRoute.Favorites> {
-                // FavoritesScreen(onMovieClick = onNavigateToMovieDetail)
+                 FavoritesScreen(onNavigateToDetail = onNavigateToMovieDetail)
             }
         }
     }
