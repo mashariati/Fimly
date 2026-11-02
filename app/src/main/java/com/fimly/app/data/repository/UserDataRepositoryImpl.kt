@@ -1,6 +1,6 @@
 package com.fimly.app.data.repository
 
-import com.fimly.app.data.local.datastore.PreferencesDataSource
+import com.fimly.app.data.local.preferences.PreferencesDataSource
 import com.fimly.app.domain.repository.UserDataRepository
 import kotlinx.coroutines.flow.Flow
 

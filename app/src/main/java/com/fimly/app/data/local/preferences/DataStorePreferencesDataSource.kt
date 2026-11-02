@@ -1,4 +1,4 @@
-package com.fimly.app.data.local.datastore
+package com.fimly.app.data.local.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

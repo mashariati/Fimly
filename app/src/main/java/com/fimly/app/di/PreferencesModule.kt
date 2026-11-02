@@ -4,10 +4,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.fimly.app.data.local.datastore.DataStorePreferencesDataSource
-import com.fimly.app.data.local.datastore.PreferencesDataSource
-import com.fimly.app.data.repository.MovieRepositoryImpl
-import com.fimly.app.domain.repository.MovieRepository
+import com.fimly.app.data.local.preferences.DataStorePreferencesDataSource
+import com.fimly.app.data.local.preferences.PreferencesDataSource
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 private const val USER_PREFERENCES_NAME = "fimly_user_prefs"

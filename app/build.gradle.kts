@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
@@ -97,4 +98,7 @@ dependencies {
 
     //Data store
     implementation(libs.androidx.datastore.preferences)
+
+    // Room database
+    implementation(libs.bundles.room)
 }

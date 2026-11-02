@@ -1,6 +1,7 @@
 package com.fimly.app
 
 import android.app.Application
+import com.fimly.app.di.databaseModule
 import com.fimly.app.di.domainModule
 import com.fimly.app.di.networkModule
 import com.fimly.app.di.preferencesModule
@@ -19,7 +20,7 @@ class FimlyApp: Application() {
             androidLogger()
             androidContext(this@FimlyApp)
             modules(networkModule, repositoryModule, domainModule,viewModelModule,
-                preferencesModule
+                preferencesModule, databaseModule
             )
         }
     }
