@@ -48,7 +48,7 @@ fun FimlyMovieCard(
     Column(
         modifier = modifier
             .width(135.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onMovieClick(movie.id) }
     ) {
@@ -108,7 +108,7 @@ fun RatingBadge(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(RatingBadgeBg)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

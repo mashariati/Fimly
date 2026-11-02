@@ -121,10 +121,10 @@ fun FavoritesContent(
 
                 // Delete All Button with Trash Icon
                 Surface(
-                    shape = MaterialTheme.shapes.small,
+                    shape = MaterialTheme.shapes.extraSmall,
                     color = SecondaryRed.copy(alpha = 0.12f),
                     modifier = Modifier
-                        .clip(MaterialTheme.shapes.small)
+                        .clip(MaterialTheme.shapes.extraSmall)
                         .clickable { onClearAllClick() }
                 ) {
                     Row(
@@ -237,9 +237,9 @@ private fun FavoriteMovieCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large) // 16.dp radius from Shape.kt
+            .clip(MaterialTheme.shapes.medium) // 16.dp radius from Shape.kt
             .clickable { onCardClick() },
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Row(
@@ -257,7 +257,7 @@ private fun FavoriteMovieCard(
                 modifier = Modifier
                     .width(120.dp)
                     .height(86.dp)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(MaterialTheme.colorScheme.background)
             )
 
@@ -353,7 +353,7 @@ private fun FavoritesSkeletonLoading() {
         repeat(4) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
+                shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
                 Row(
@@ -367,7 +367,7 @@ private fun FavoritesSkeletonLoading() {
                         modifier = Modifier
                             .width(120.dp)
                             .height(86.dp)
-                            .clip(MaterialTheme.shapes.small)
+                            .clip(MaterialTheme.shapes.extraSmall)
                             .shimmerEffect()
                     )
 

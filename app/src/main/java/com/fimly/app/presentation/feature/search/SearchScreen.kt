@@ -1,6 +1,7 @@
 package com.fimly.app.presentation.feature.search
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -35,16 +37,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.fimly.app.R
+import com.fimly.app.domain.model.Movie
 import com.fimly.app.presentation.component.FimlyEmptyState
 import com.fimly.app.presentation.component.FimlyErrorState
-import com.fimly.app.presentation.component.FimlyMovieListItem
-import com.fimly.app.presentation.component.FimlyMovieListItemSkeleton
+import com.fimly.app.presentation.component.RatingBadge
+import com.fimly.app.presentation.component.TmdbGenreHelper
+import com.fimly.app.presentation.component.shimmerEffect
 import com.fimly.app.presentation.feature.home.MovieCategory
 import com.fimly.app.presentation.theme.FimlyTheme
 
@@ -210,7 +217,7 @@ private fun FimlySearchBar(
     ) {
         Surface(
             modifier = Modifier.weight(1f),
-            shape = MaterialTheme.shapes.extraLarge, // 24.dp radius from Shape.kt
+            shape = MaterialTheme.shapes.large, // 24.dp radius from Shape.kt
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
             BasicTextField(
@@ -260,7 +267,7 @@ private fun FimlySearchBar(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .clickable { onCancelClick() }
                     .padding(horizontal = 4.dp, vertical = 8.dp)
             )
@@ -384,5 +391,203 @@ private fun SearchErrorPreview() {
             onMovieClick = {},
             onRetryClick = {}
         )
+    }
+}
+
+@Composable
+fun FimlyMovieListItem(
+    movie: Movie,
+    onMovieClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .clickable { onMovieClick(movie.id) }
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left Poster with Top-Left Rating Badge (112dp x 147dp, 8dp radius per Figma)
+        Box(
+            modifier = Modifier
+                .width(112.dp)
+                .height(147.dp)
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            AsyncImage(
+                model = movie.fullPosterUrl ?: movie.fullBackdropUrl,
+                contentDescription = movie.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            RatingBadge(
+                rating = movie.formattedRating,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+            )
+        }
+
+        // Right Movie Metadata Column
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Top Accent Tag (Vote count / Popularity indicator)
+            Surface(
+                shape = MaterialTheme.shapes.extraSmall,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    text = if (movie.voteCount > 0) "${movie.voteCount} Votes" else "TMDB Movie",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+
+            // Movie Title
+            Text(
+                text = movie.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // Release Year + Age Certification Badge (PG-13 / 18+)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.calendar),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = movie.releaseYear,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Surface(
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    Text(
+                        text = if (movie.isAdult) "18+" else "PG-13",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            // Genre Row (Action | Movie)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.film),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = TmdbGenreHelper.getGenreNames(movie.genreIds),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "|",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Text(
+                    text = "Movie",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            // Short Overview Snippet (if available)
+            if (movie.overview.isNotBlank()) {
+                Text(
+                    text = movie.overview,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Reusable Shimmer Skeleton for horizontal movie list items (Search & Favorites).
+ */
+@Composable
+fun FimlyMovieListItemSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(112.dp)
+                .height(147.dp)
+                .clip(MaterialTheme.shapes.extraSmall)
+                .shimmerEffect()
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(70.dp)
+                    .height(20.dp)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .shimmerEffect()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(20.dp)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .shimmerEffect()
+            )
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(16.dp)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .shimmerEffect()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(16.dp)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .shimmerEffect()
+            )
+        }
     }
 }

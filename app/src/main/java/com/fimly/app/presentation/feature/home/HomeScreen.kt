@@ -403,7 +403,7 @@ private fun HomeSkeletonLoading() {
                             modifier = Modifier
                                 .width(135.dp)
                                 .height(235.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(MaterialTheme.shapes.small)
                                 .shimmerEffect()
                         )
                     }

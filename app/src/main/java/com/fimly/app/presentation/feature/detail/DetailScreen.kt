@@ -229,7 +229,7 @@ private fun DetailSuccessView(
                 modifier = Modifier
                     .width(205.dp)
                     .height(287.dp),
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shadowElevation = 12.dp
             ) {
@@ -324,7 +324,7 @@ private fun DetailTopBar(
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .clip(MaterialTheme.shapes.medium)
+                .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
                 .clickable { onBackClick() },
             contentAlignment = Alignment.Center
@@ -355,7 +355,7 @@ private fun DetailTopBar(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(MaterialTheme.shapes.medium)
+                    .clip(MaterialTheme.shapes.small)
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
                     .clickable { onFavoriteClick() },
                 contentAlignment = Alignment.Center
@@ -437,7 +437,7 @@ private fun DetailRatingBadge(
 ) {
     Row(
         modifier = Modifier
-            .clip(MaterialTheme.shapes.small)
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -472,7 +472,7 @@ private fun GenreChipsRow(genres: List<Genre>) {
     ) {
         items(genres, key = { it.id }) { genre ->
             Surface(
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Text(
@@ -614,7 +614,7 @@ private fun InfoMetricCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Column(
@@ -657,7 +657,7 @@ private fun ProductionCompaniesSection(
         ) {
             items(companies, key = { it.id }) { company ->
                 Surface(
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
                     Row(
@@ -737,7 +737,7 @@ private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
             modifier = Modifier
                 .width(205.dp)
                 .height(287.dp)
-                .clip(MaterialTheme.shapes.medium)
+                .clip(MaterialTheme.shapes.small)
                 .shimmerEffect()
         )
 
@@ -748,7 +748,7 @@ private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
             modifier = Modifier
                 .width(240.dp)
                 .height(20.dp)
-                .clip(MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.extraSmall)
                 .shimmerEffect()
         )
 
@@ -759,7 +759,7 @@ private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
             modifier = Modifier
                 .width(80.dp)
                 .height(28.dp)
-                .clip(MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.extraSmall)
                 .shimmerEffect()
         )
 
@@ -776,7 +776,7 @@ private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
                 modifier = Modifier
                     .width(100.dp)
                     .height(20.dp)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .shimmerEffect()
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -785,7 +785,7 @@ private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(16.dp)
-                        .clip(MaterialTheme.shapes.small)
+                        .clip(MaterialTheme.shapes.extraSmall)
                         .shimmerEffect()
                 )
             }

@@ -132,7 +132,7 @@ fun OnboardingContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = MaterialTheme.shapes.large,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
