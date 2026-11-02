@@ -20,6 +20,7 @@ data class FavoritesState(
 sealed interface FavoritesIntent : UiIntent {
     data class MovieClicked(val movieId: Int) : FavoritesIntent
     data class RemoveFromFavoritesClicked(val movie: Movie) : FavoritesIntent
+    data object ClearAllFavoritesClicked : FavoritesIntent
     data object RetryClicked : FavoritesIntent
 }
 

@@ -56,38 +56,22 @@ import com.fimly.app.presentation.theme.FimlyTheme
 fun SearchScreen(
     onNavigateToDetail: (Int) -> Unit = {}
 ) {
-    // Starts with dummy results so you can immediately see and test the list & filters,
-    // or clear the query via "Cancel" to see the initial Idle prompt!
-    var uiState by remember {
-        mutableStateOf(
-            SearchState(
-                query = "Fight Club",
-                selectedCategoryId = null,
-                contentState = SearchContentState.Success(dummySearchMovies)
-            )
-        )
-    }
+    // Starts with empty query and Idle state by default
+    var uiState by remember { mutableStateOf(SearchState()) }
 
-    fun filterDummyMovies(query: String, categoryId: Int?) {
-        if (query.isBlank()) {
-            uiState = uiState.copy(
-                query = "",
-                selectedCategoryId = categoryId,
-                contentState = SearchContentState.Idle
-            )
+    fun handleDummyQuery(newQuery: String) {
+        if (newQuery.isBlank()) {
+            uiState = SearchState(query = "", contentState = SearchContentState.Idle)
             return
         }
 
         val filtered = dummySearchMovies.filter { movie ->
-            val matchesQuery = movie.title.contains(query, ignoreCase = true) ||
-                    movie.releaseYear.contains(query, ignoreCase = true)
-            val matchesGenre = categoryId == null || movie.genreIds.contains(categoryId)
-            matchesQuery && matchesGenre
+            movie.title.contains(newQuery, ignoreCase = true) ||
+                    movie.releaseYear.contains(newQuery, ignoreCase = true)
         }
 
-        uiState = uiState.copy(
-            query = query,
-            selectedCategoryId = categoryId,
+        uiState = SearchState(
+            query = newQuery,
             contentState = if (filtered.isEmpty()) {
                 SearchContentState.Empty
             } else {
@@ -98,19 +82,10 @@ fun SearchScreen(
 
     SearchContent(
         state = uiState,
-        onQueryChange = { newQuery ->
-            filterDummyMovies(newQuery, uiState.selectedCategoryId)
-        },
-        onCancelClick = {
-            filterDummyMovies("", null)
-        },
-        onCategorySelect = { categoryId ->
-            filterDummyMovies(uiState.query, categoryId)
-        },
+        onQueryChange = { handleDummyQuery(it) },
+        onCancelClick = { handleDummyQuery("") },
         onMovieClick = onNavigateToDetail,
-        onRetryClick = {
-            filterDummyMovies(uiState.query.ifBlank { "Fight Club" }, uiState.selectedCategoryId)
-        }
+        onRetryClick = { handleDummyQuery(uiState.query) }
     )
 }
 
@@ -122,7 +97,6 @@ fun SearchContent(
     state: SearchState,
     onQueryChange: (String) -> Unit,
     onCancelClick: () -> Unit,
-    onCategorySelect: (Int?) -> Unit,
     onMovieClick: (Int) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -133,10 +107,8 @@ fun SearchContent(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
         // 1. Top Search Bar + "Cancel" Action
         FimlySearchBar(
             query = state.query,
@@ -153,14 +125,7 @@ fun SearchContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Genre Filter Strip
-        SearchGenreFilterRow(
-            categories = state.categories,
-            selectedCategoryId = state.selectedCategoryId,
-            onCategorySelect = onCategorySelect
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
 
         // 3. Dynamic State Content Area
         Box(
@@ -303,50 +268,6 @@ private fun FimlySearchBar(
     }
 }
 
-/**
- * Horizontal Genre Filter Strip matching Figma (8dp corner radius).
- */
-@Composable
-private fun SearchGenreFilterRow(
-    categories: List<MovieCategory>,
-    selectedCategoryId: Int?,
-    onCategorySelect: (Int?) -> Unit
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(
-            items = categories,
-            key = { it.id ?: -1 }
-        ) { category ->
-            val isSelected = category.id == selectedCategoryId
-
-            Surface(
-                shape = MaterialTheme.shapes.small, // 8.dp radius
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.surfaceVariant
-                } else {
-                    Color.Transparent
-                },
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
-                    .clickable { onCategorySelect(category.id) }
-            ) {
-                Text(
-                    text = category.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun SearchSkeletonLoading() {
@@ -375,7 +296,6 @@ private fun SearchResultsDarkPreview() {
             ),
             onQueryChange = {},
             onCancelClick = {},
-            onCategorySelect = {},
             onMovieClick = {},
             onRetryClick = {}
         )
@@ -393,7 +313,6 @@ private fun SearchResultsLightPreview() {
             ),
             onQueryChange = {},
             onCancelClick = {},
-            onCategorySelect = {},
             onMovieClick = {},
             onRetryClick = {}
         )
@@ -411,7 +330,6 @@ private fun SearchEmptyPreview() {
             ),
             onQueryChange = {},
             onCancelClick = {},
-            onCategorySelect = {},
             onMovieClick = {},
             onRetryClick = {}
         )
@@ -429,7 +347,6 @@ private fun SearchIdlePreview() {
             ),
             onQueryChange = {},
             onCancelClick = {},
-            onCategorySelect = {},
             onMovieClick = {},
             onRetryClick = {}
         )
@@ -447,7 +364,6 @@ private fun SearchLoadingPreview() {
             ),
             onQueryChange = {},
             onCancelClick = {},
-            onCategorySelect = {},
             onMovieClick = {},
             onRetryClick = {}
         )
@@ -465,7 +381,6 @@ private fun SearchErrorPreview() {
             ),
             onQueryChange = {},
             onCancelClick = {},
-            onCategorySelect = {},
             onMovieClick = {},
             onRetryClick = {}
         )

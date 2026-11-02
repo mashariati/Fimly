@@ -77,6 +77,9 @@ fun FavoritesScreen(
                 )
             }
         },
+        onClearAllClick = {
+            uiState = uiState.copy(contentState = FavoritesContentState.Empty)
+        },
         onRetryClick = {
             uiState = dummyFavoritesSuccessState
         }
@@ -92,24 +95,60 @@ fun FavoritesContent(
     onMovieClick: (Int) -> Unit,
     onRemoveFavoriteClick: (Movie) -> Unit,
     onRetryClick: () -> Unit,
+    onClearAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
-        // Top Header Title
-        Text(
-            text = "Favorites",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        )
+        val currentContent = state.contentState
+        if (currentContent is FavoritesContentState.Success && currentContent.movies.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${currentContent.movies.size} Saved Movies",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                // Delete All Button with Trash Icon
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = SecondaryRed.copy(alpha = 0.12f),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable { onClearAllClick() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.trash_bin),
+                            contentDescription = "Clear All Favorites",
+                            tint = SecondaryRed,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Clear All",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = SecondaryRed
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Dynamic Content Area
         Box(
@@ -374,7 +413,9 @@ private fun FavoritesDarkPreview() {
             state = dummyFavoritesSuccessState,
             onMovieClick = {},
             onRemoveFavoriteClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onClearAllClick= {},
+
         )
     }
 }
@@ -387,7 +428,9 @@ private fun FavoritesLightPreview() {
             state = dummyFavoritesSuccessState,
             onMovieClick = {},
             onRemoveFavoriteClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onClearAllClick= {},
+
         )
     }
 }
@@ -400,7 +443,9 @@ private fun FavoritesEmptyPreview() {
             state = FavoritesState(contentState = FavoritesContentState.Empty),
             onMovieClick = {},
             onRemoveFavoriteClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onClearAllClick= {},
+
         )
     }
 }
@@ -413,7 +458,9 @@ private fun FavoritesLoadingPreview() {
             state = FavoritesState(contentState = FavoritesContentState.Loading),
             onMovieClick = {},
             onRemoveFavoriteClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onClearAllClick= {},
+
         )
     }
 }
@@ -428,7 +475,8 @@ private fun FavoritesErrorPreview() {
             ),
             onMovieClick = {},
             onRemoveFavoriteClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onClearAllClick= {},
         )
     }
 }

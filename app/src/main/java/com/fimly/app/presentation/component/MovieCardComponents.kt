@@ -49,7 +49,7 @@ fun FimlyMovieCard(
         modifier = modifier
             .width(135.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(PrimarySoft)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onMovieClick(movie.id) }
     ) {
         Box(

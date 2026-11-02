@@ -36,5 +36,7 @@ sealed interface BottomTabRoute {
 
     @Serializable
     data object Favorites : BottomTabRoute
+    @Serializable
+
     data object Profile : BottomTabRoute
 }

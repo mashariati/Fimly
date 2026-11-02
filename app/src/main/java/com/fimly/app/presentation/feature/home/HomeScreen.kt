@@ -243,7 +243,7 @@ private fun HeroBannerItem(
             .fillMaxWidth()
             .height(165.dp)
             .clip(MaterialTheme.shapes.medium)
-            .background(PrimarySoft)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onClick() }
     ) {
         AsyncImage(
@@ -318,8 +318,14 @@ private fun CategoriesSection(
 
                 Box(
                     modifier = Modifier
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .background(if (isSelected) PrimarySoft else Color.Transparent)
+                        .clip(MaterialTheme.shapes.extraSmall) // 8.dp radius
+                        .background(
+                            if (isSelected) {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            } else {
+                                Color.Transparent
+                            }
+                        )
                         .clickable { onCategorySelect(category.id) }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center

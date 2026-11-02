@@ -38,6 +38,7 @@ import com.fimly.app.presentation.feature.detail.DetailScreen
 import com.fimly.app.presentation.feature.favorites.FavoritesScreen
 import com.fimly.app.presentation.feature.home.HomeScreen
 import com.fimly.app.presentation.feature.onboarding.OnboardingScreen
+import com.fimly.app.presentation.feature.profile.ProfileScreen
 import com.fimly.app.presentation.feature.search.SearchScreen
 import com.fimly.app.presentation.feature.splash.SplashScreen
 import com.fimly.app.presentation.theme.PrimarySoft
@@ -139,6 +140,9 @@ fun MainScaffoldScreen(
             composable<BottomTabRoute.Favorites> {
                  FavoritesScreen(onNavigateToDetail = onNavigateToMovieDetail)
             }
+            composable<BottomTabRoute.Profile> {
+                ProfileScreen()
+            }
         }
     }
 }
@@ -172,8 +176,12 @@ private fun FimlyBottomNavigationBar(
 
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (isSelected) PrimarySoft else Color.Transparent)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(if (isSelected) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        Color.Transparent
+                    })
                     .clickable {
                         if (!isSelected) {
                             navController.navigate(item.route) {
