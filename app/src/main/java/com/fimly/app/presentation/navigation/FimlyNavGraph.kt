@@ -34,6 +34,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fimly.app.R
+import com.fimly.app.presentation.feature.detail.DetailScreen
 import com.fimly.app.presentation.feature.home.HomeScreen
 import com.fimly.app.presentation.feature.onboarding.OnboardingScreen
 import com.fimly.app.presentation.feature.splash.SplashScreen
@@ -95,10 +96,10 @@ fun FimlyNavGraph(
         // Full-Screen Movie Detail
         composable<RootRoute.MovieDetail> { backStackEntry ->
             val route = backStackEntry.toRoute<RootRoute.MovieDetail>()
-            // DetailScreen(
-            //     movieId = route.movieId,
-            //     onNavigateBack = { rootNavController.navigateUp() }
-            // )
+             DetailScreen(
+                 movieId = route.movieId,
+                 onNavigateBack = { rootNavController.navigateUp() }
+             )
         }
     }
 }
