@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -27,13 +28,13 @@ fun Modifier.shimmerEffect(): Modifier = composed {
             animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "shimmer_ translate"
+        label = "shimmer_translate"
     )
 
     val shimmerColors = listOf(
-        PrimarySoft.copy(alpha = 0.9f),
-        TextDarkGrey.copy(alpha = 0.4f),
-        PrimarySoft.copy(alpha = 0.9f),
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .1f),
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
     )
 
     background(

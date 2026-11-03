@@ -56,10 +56,10 @@ fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
             contentDescription = "Fimly Logo",
             modifier = Modifier
-                .size(150.dp)
+                .size(180.dp)
                 .scale(scale.value)
         )
     }
