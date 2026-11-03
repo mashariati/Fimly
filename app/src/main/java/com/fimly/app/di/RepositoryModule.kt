@@ -7,6 +7,6 @@ import com.fimly.app.domain.repository.UserDataRepository
 import org.koin.dsl.module
 val repositoryModule = module {
     single<UserDataRepository> { UserDataRepositoryImpl(get()) }
-    single<MovieRepository>{ MovieRepositoryImpl(get()) }
+    single<MovieRepository>{ MovieRepositoryImpl(get(),get ()) }
 //    singleOf(::RepositoryImpl) bind Repository::class
 }

@@ -6,6 +6,7 @@ import com.fimly.app.domain.model.MovieDetail
 import com.fimly.app.domain.model.MovieSortBy
 import com.fimly.app.domain.util.AppResult
 import com.fimly.app.domain.util.DataError
+import kotlinx.coroutines.flow.Flow
 
 interface MovieRepository {
     suspend fun discoverMovies(
@@ -28,4 +29,14 @@ interface MovieRepository {
 
     suspend fun getMovieGenres(
     ): AppResult<List<Genre>, DataError>
+
+    fun getFavoriteMovies(): Flow<List<Movie>>
+
+    fun isMovieFavorite(movieId: Int): Flow<Boolean>
+
+    suspend fun toggleFavorite(movie: Movie)
+
+    suspend fun removeFavorite(movieId: Int)
+
+    suspend fun clearAllFavorites()
 }
