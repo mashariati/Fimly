@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -20,36 +21,22 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiEffect>(
     initialState: S
 ) : ViewModel() {
 
-    // 1. State Management
     private val _uiState = MutableStateFlow(initialState)
     val uiState: StateFlow<S> = _uiState.asStateFlow()
 
-    // 2. Effect Management (Using Channel guarantees no events are lost in Compose)
-    private val _effect = Channel<E>()
+    private val _effect = Channel<E>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    /**
-     * Gets the current UI state securely.
-     */
     protected val currentState: S
         get() = _uiState.value
 
-    /**
-     * Abstract function to be implemented by child ViewModels.
-     * All UI actions (Intents) pass through this single entry point.
-     */
-    abstract fun handleIntent(intent: I)
 
-    /**
-     * Updates the UI state using a reducer approach.
-     */
+    protected abstract fun handleIntent(intent: I)
+
     protected fun updateState(reducer: S.() -> S) {
-        _uiState.value = currentState.reducer()
+        _uiState.update { it.reducer() }
     }
 
-    /**
-     * Sends a one-time side effect to the UI securely.
-     */
     protected fun sendEffect(effectBuilder: () -> E) {
         viewModelScope.launch {
             _effect.send(effectBuilder())
