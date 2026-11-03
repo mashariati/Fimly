@@ -43,7 +43,6 @@ fun FimlyMovieCard(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    genreName: String = "Action"
 ) {
     Column(
         modifier = modifier
@@ -61,6 +60,7 @@ fun FimlyMovieCard(
                 model = movie.fullPosterUrl,
                 contentDescription = movie.title,
                 contentScale = ContentScale.Crop,
+                error = painterResource(R.drawable.film),
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -91,7 +91,7 @@ fun FimlyMovieCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "${movie.releaseYear} • $genreName",
+                text = "${movie.releaseYear} • ${movie.primaryGenresText.first()}",
                 style = MaterialTheme.typography.labelSmall, // 10sp Medium
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

@@ -52,7 +52,6 @@ import com.fimly.app.domain.model.Movie
 import com.fimly.app.presentation.component.FimlyEmptyState
 import com.fimly.app.presentation.component.FimlyErrorState
 import com.fimly.app.presentation.component.RatingBadge
-import com.fimly.app.presentation.component.TmdbGenreHelper
 import com.fimly.app.presentation.component.shimmerEffect
 import com.fimly.app.presentation.theme.FimlyTheme
 import org.koin.androidx.compose.koinViewModel
@@ -116,8 +115,9 @@ fun SearchContent(
                 is SearchContentState.Idle -> {
                     FimlyEmptyState(
                         title = "Search for Movies",
-                        subtitle = "Find your favorite movies by typing a title",
+                        subtitle = "Find your favorite movies by typing a title,categories, years, etc",
                         iconRes = R.drawable.search,
+                        iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -269,9 +269,7 @@ private fun SearchPaginatedMovieList(
     }
 }
 
-/**
- * Custom Search Input Bar matching Figma specifications (24dp corner radius, 16dp horizontal / 12dp vertical padding).
- */
+// Custom Search Input Bar
 @Composable
 private fun FimlySearchBar(
     query: String,
@@ -384,7 +382,9 @@ fun FimlyMovieListItem(
                 model = movie.fullPosterUrl ?: movie.fullBackdropUrl,
                 contentDescription = movie.title,
                 contentScale = ContentScale.Crop,
+                error = painterResource(R.drawable.film),
                 modifier = Modifier.fillMaxSize()
+
             )
 
             RatingBadge(
@@ -460,7 +460,7 @@ fun FimlyMovieListItem(
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = TmdbGenreHelper.getGenreNames(movie.genreIds),
+                    text = movie.primaryGenresText.take(2).joinToString(" • "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

@@ -48,7 +48,6 @@ import com.fimly.app.R
 import com.fimly.app.domain.model.Movie
 import com.fimly.app.presentation.component.FimlyEmptyState
 import com.fimly.app.presentation.component.FimlyErrorState
-import com.fimly.app.presentation.component.TmdbGenreHelper
 import com.fimly.app.presentation.component.shimmerEffect
 import com.fimly.app.presentation.core.ContentState
 import com.fimly.app.presentation.theme.FimlyTheme
@@ -166,6 +165,7 @@ fun FavoritesContent(
                         title = "Your Favorites List is Empty",
                         subtitle = "Explore movies and tap the heart icon to save your favorite titles for offline access.",
                         iconRes = R.drawable.heart,
+                        iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -174,7 +174,6 @@ fun FavoritesContent(
                     FimlyErrorState(
                         message = content.message,
                         onRetryClick = {},
-                        iconRes = R.drawable.notification,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -247,6 +246,7 @@ private fun FavoriteMovieCard(
             AsyncImage(
                 model = imageRequest,
                 contentDescription = movie.title,
+                error = painterResource(R.drawable.film),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .width(120.dp)
@@ -260,7 +260,7 @@ private fun FavoriteMovieCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = TmdbGenreHelper.getGenreNames(movie.genreIds, limit = 1),
+                    text = movie.primaryGenresText.first(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
