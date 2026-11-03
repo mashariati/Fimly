@@ -15,27 +15,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.fimly.app.R
 import com.fimly.app.domain.model.Movie
@@ -52,60 +54,34 @@ import com.fimly.app.presentation.component.FimlyErrorState
 import com.fimly.app.presentation.component.RatingBadge
 import com.fimly.app.presentation.component.TmdbGenreHelper
 import com.fimly.app.presentation.component.shimmerEffect
-import com.fimly.app.presentation.feature.home.MovieCategory
 import com.fimly.app.presentation.theme.FimlyTheme
+import org.koin.androidx.compose.koinViewModel
 
-
-/**
- * Stateful Search Screen entry point (Interactive with Dummy Data).
- */
 @Composable
 fun SearchScreen(
-    onNavigateToDetail: (Int) -> Unit = {}
+    onNavigateToDetail: (Int) -> Unit = {},
+    viewModel: SearchViewModel = koinViewModel()
 ) {
-    // Starts with empty query and Idle state by default
-    var uiState by remember { mutableStateOf(SearchState()) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    fun handleDummyQuery(newQuery: String) {
-        if (newQuery.isBlank()) {
-            uiState = SearchState(query = "", contentState = SearchContentState.Idle)
-            return
-        }
-
-        val filtered = dummySearchMovies.filter { movie ->
-            movie.title.contains(newQuery, ignoreCase = true) ||
-                    movie.releaseYear.contains(newQuery, ignoreCase = true)
-        }
-
-        uiState = SearchState(
-            query = newQuery,
-            contentState = if (filtered.isEmpty()) {
-                SearchContentState.Empty
-            } else {
-                SearchContentState.Success(filtered)
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is SearchEffect.NavigateToDetail -> onNavigateToDetail(effect.movieId)
             }
-        )
+        }
     }
 
     SearchContent(
         state = uiState,
-        onQueryChange = { handleDummyQuery(it) },
-        onCancelClick = { handleDummyQuery("") },
-        onMovieClick = onNavigateToDetail,
-        onRetryClick = { handleDummyQuery(uiState.query) }
+        onIntent = viewModel::onIntent
     )
 }
 
-/**
- * Stateless Search Content handling Idle, Loading, Empty, Error, and Success states.
- */
 @Composable
 fun SearchContent(
     state: SearchState,
-    onQueryChange: (String) -> Unit,
-    onCancelClick: () -> Unit,
-    onMovieClick: (Int) -> Unit,
-    onRetryClick: () -> Unit,
+    onIntent: (SearchIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -116,13 +92,12 @@ fun SearchContent(
             .background(MaterialTheme.colorScheme.background)
             .padding(top = 24.dp)
     ) {
-        // 1. Top Search Bar + "Cancel" Action
         FimlySearchBar(
             query = state.query,
-            onQueryChange = onQueryChange,
+            onQueryChange = { newQuery -> onIntent(SearchIntent.QueryChanged(newQuery)) },
             onCancelClick = {
                 focusManager.clearFocus()
-                onCancelClick()
+                onIntent(SearchIntent.ClearQueryClicked)
             },
             onSearchImeAction = {
                 focusManager.clearFocus()
@@ -132,9 +107,6 @@ fun SearchContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-
-
-        // 3. Dynamic State Content Area
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -144,7 +116,7 @@ fun SearchContent(
                 is SearchContentState.Idle -> {
                     FimlyEmptyState(
                         title = "Search for Movies",
-                        subtitle = "Find your favorite movies by typing a title, release year, or selecting a genre above.",
+                        subtitle = "Find your favorite movies by typing a title",
                         iconRes = R.drawable.search,
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -155,7 +127,6 @@ fun SearchContent(
                 }
 
                 is SearchContentState.Empty -> {
-                    // Exact copy from Figma "Search - Blank Page" design
                     FimlyEmptyState(
                         title = "We Are Sorry, We Can\nNot Find The Movie :(",
                         subtitle = "Find your movie by Type title,\ncategories, years, etc",
@@ -167,29 +138,128 @@ fun SearchContent(
                 is SearchContentState.Error -> {
                     FimlyErrorState(
                         message = content.message,
-                        onRetryClick = onRetryClick,
+                        onRetryClick = { onIntent(SearchIntent.RetryClicked) },
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
                 is SearchContentState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 24.dp,
-                            end = 24.dp,
-                            top = 4.dp,
-                            bottom = 24.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    SearchPaginatedMovieList(
+                        content = content,
+                        onMovieClick = { movieId -> onIntent(SearchIntent.MovieClicked(movieId)) },
+                        onLoadNextPage = { onIntent(SearchIntent.LoadNextPage) },
+                        onRetryNextPage = { onIntent(SearchIntent.RetryClicked) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchPaginatedMovieList(
+    content: SearchContentState.Success,
+    onMovieClick: (Int) -> Unit,
+    onLoadNextPage: () -> Unit,
+    onRetryNextPage: () -> Unit
+) {
+    val listState = rememberLazyListState()
+
+    val shouldLoadMore by remember(
+        content.movies.size,
+        content.isLoadingNextPage,
+        content.endReached,
+        content.paginationError
+    ) {
+        derivedStateOf {
+            if (content.isLoadingNextPage || content.endReached || content.paginationError != null) {
+                false
+            } else {
+                val layoutInfo = listState.layoutInfo
+                val totalItemsCount = layoutInfo.totalItemsCount
+                val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                totalItemsCount > 0 && lastVisibleItemIndex >= (totalItemsCount - 3)
+            }
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) {
+            onLoadNextPage()
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 24.dp,
+            end = 24.dp,
+            top = 4.dp,
+            bottom = 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(
+            items = content.movies,
+            key = { it.id }
+        ) { movie ->
+            FimlyMovieListItem(
+                movie = movie,
+                onMovieClick = onMovieClick
+            )
+        }
+
+        if (content.isLoadingNextPage) {
+            item(key = "pagination_loading") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp),
+                        strokeWidth = 2.5.dp
+                    )
+                }
+            }
+        }
+
+        if (content.paginationError != null) {
+            item(key = "pagination_error") {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(
-                            items = content.movies,
-                            key = { it.id }
-                        ) { movie ->
-                            FimlyMovieListItem(
-                                movie = movie,
-                                onMovieClick = onMovieClick,
+                        Text(
+                            text = content.paginationError,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
+                        )
+                        TextButton(
+                            onClick = onRetryNextPage,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(
+                                text = "Retry",
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
@@ -260,7 +330,6 @@ private fun FimlySearchBar(
             )
         }
 
-        // Animated "Cancel" button when query is not empty (Matches Figma Search Result & Blank Page)
         AnimatedVisibility(visible = query.isNotEmpty()) {
             Text(
                 text = "Cancel",
@@ -275,7 +344,6 @@ private fun FimlySearchBar(
     }
 }
 
-
 @Composable
 private fun SearchSkeletonLoading() {
     Column(
@@ -287,110 +355,6 @@ private fun SearchSkeletonLoading() {
         repeat(4) {
             FimlyMovieListItemSkeleton()
         }
-    }
-}
-
-// --- Previews (Results Dark/Light, Idle, Blank/Empty, Skeleton Loading, Error) ---
-
-@Preview(showBackground = true, name = "1. Search Results - Dark Mode")
-@Composable
-private fun SearchResultsDarkPreview() {
-    FimlyTheme(darkTheme = true) {
-        SearchContent(
-            state = SearchState(
-                query = "Fight Club",
-                contentState = SearchContentState.Success(dummySearchMovies)
-            ),
-            onQueryChange = {},
-            onCancelClick = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "2. Search Results - Light Mode")
-@Composable
-private fun SearchResultsLightPreview() {
-    FimlyTheme(darkTheme = false) {
-        SearchContent(
-            state = SearchState(
-                query = "Fight Club",
-                contentState = SearchContentState.Success(dummySearchMovies)
-            ),
-            onQueryChange = {},
-            onCancelClick = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "3. Search - Blank / Empty State")
-@Composable
-private fun SearchEmptyPreview() {
-    FimlyTheme(darkTheme = true) {
-        SearchContent(
-            state = SearchState(
-                query = "John",
-                contentState = SearchContentState.Empty
-            ),
-            onQueryChange = {},
-            onCancelClick = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "4. Search - Initial Idle State")
-@Composable
-private fun SearchIdlePreview() {
-    FimlyTheme(darkTheme = true) {
-        SearchContent(
-            state = SearchState(
-                query = "",
-                contentState = SearchContentState.Idle
-            ),
-            onQueryChange = {},
-            onCancelClick = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "5. Search - Skeleton Loading")
-@Composable
-private fun SearchLoadingPreview() {
-    FimlyTheme(darkTheme = true) {
-        SearchContent(
-            state = SearchState(
-                query = "Spiderman",
-                contentState = SearchContentState.Loading
-            ),
-            onQueryChange = {},
-            onCancelClick = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "6. Search - Error State")
-@Composable
-private fun SearchErrorPreview() {
-    FimlyTheme(darkTheme = true) {
-        SearchContent(
-            state = SearchState(
-                query = "Spiderman",
-                contentState = SearchContentState.Error("Unable to reach server. Please check your connection.")
-            ),
-            onQueryChange = {},
-            onCancelClick = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
     }
 }
 
@@ -409,7 +373,6 @@ fun FimlyMovieListItem(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left Poster with Top-Left Rating Badge (112dp x 147dp, 8dp radius per Figma)
         Box(
             modifier = Modifier
                 .width(112.dp)
@@ -432,12 +395,10 @@ fun FimlyMovieListItem(
             )
         }
 
-        // Right Movie Metadata Column
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Top Accent Tag (Vote count / Popularity indicator)
             Surface(
                 shape = MaterialTheme.shapes.extraSmall,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -450,7 +411,6 @@ fun FimlyMovieListItem(
                 )
             }
 
-            // Movie Title
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -459,7 +419,6 @@ fun FimlyMovieListItem(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Release Year + Age Certification Badge (PG-13 / 18+)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -490,7 +449,6 @@ fun FimlyMovieListItem(
                 }
             }
 
-            // Genre Row (Action | Movie)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -520,7 +478,6 @@ fun FimlyMovieListItem(
                 )
             }
 
-            // Short Overview Snippet (if available)
             if (movie.overview.isNotBlank()) {
                 Text(
                     text = movie.overview,
@@ -534,9 +491,6 @@ fun FimlyMovieListItem(
     }
 }
 
-/**
- * Reusable Shimmer Skeleton for horizontal movie list items (Search & Favorites).
- */
 @Composable
 fun FimlyMovieListItemSkeleton(
     modifier: Modifier = Modifier
@@ -589,5 +543,109 @@ fun FimlyMovieListItemSkeleton(
                     .shimmerEffect()
             )
         }
+    }
+}
+
+private val previewSearchMovies = listOf(
+    Movie(
+        id = 550,
+        title = "Fight Club",
+        originalTitle = "Fight Club",
+        overview = "A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression.",
+        posterPath = "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+        backdropPath = "/hZkgoQYus5vegHoetLkCJzb17zJ.jpg",
+        releaseDate = "1999-10-15",
+        popularity = 73.4,
+        voteAverage = 8.4,
+        voteCount = 26279,
+        isAdult = false,
+        genreIds = listOf(18, 53)
+    )
+)
+
+@Preview(showBackground = true, name = "1. Search Results - Dark Mode")
+@Composable
+private fun SearchResultsDarkPreview() {
+    FimlyTheme(darkTheme = true) {
+        SearchContent(
+            state = SearchState(
+                query = "Fight Club",
+                contentState = SearchContentState.Success(
+                    movies = previewSearchMovies,
+                    isLoadingNextPage = true
+                )
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "2. Search Results - Light Mode")
+@Composable
+private fun SearchResultsLightPreview() {
+    FimlyTheme(darkTheme = false) {
+        SearchContent(
+            state = SearchState(
+                query = "Fight Club",
+                contentState = SearchContentState.Success(previewSearchMovies)
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "3. Search - Blank / Empty State")
+@Composable
+private fun SearchEmptyPreview() {
+    FimlyTheme(darkTheme = true) {
+        SearchContent(
+            state = SearchState(
+                query = "John",
+                contentState = SearchContentState.Empty
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "4. Search - Initial Idle State")
+@Composable
+private fun SearchIdlePreview() {
+    FimlyTheme(darkTheme = true) {
+        SearchContent(
+            state = SearchState(
+                query = "",
+                contentState = SearchContentState.Idle
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "5. Search - Skeleton Loading")
+@Composable
+private fun SearchLoadingPreview() {
+    FimlyTheme(darkTheme = true) {
+        SearchContent(
+            state = SearchState(
+                query = "Spiderman",
+                contentState = SearchContentState.Loading
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "6. Search - Error State")
+@Composable
+private fun SearchErrorPreview() {
+    FimlyTheme(darkTheme = true) {
+        SearchContent(
+            state = SearchState(
+                query = "Spiderman",
+                contentState = SearchContentState.Error("Unable to reach server. Please check your connection.")
+            ),
+            onIntent = {}
+        )
     }
 }
