@@ -52,6 +52,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.fimly.app.R
@@ -241,6 +243,7 @@ private fun DetailSuccessView(
                     model = movie.fullPosterUrl,
                     contentDescription = movie.title,
                     contentScale = ContentScale.Crop,
+                    error = painterResource(R.drawable.film),
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -316,6 +319,7 @@ private fun DetailTopBar(
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -330,7 +334,11 @@ private fun DetailTopBar(
                 .size(36.dp)
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
-                .clickable { onBackClick() },
+                .clickable {
+                    if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        onBackClick()
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -682,6 +690,7 @@ private fun ProductionCompaniesSection(
                                     model = company.fullLogoUrl,
                                     contentDescription = company.name,
                                     contentScale = ContentScale.Fit,
+                                    error = painterResource(R.drawable.film),
                                     modifier = Modifier.fillMaxSize()
                                 )
                             } else {
@@ -717,9 +726,7 @@ private fun ProductionCompaniesSection(
     }
 }
 
-/**
- * Shimmer Skeleton Loading matching the Detail Screen layout.
- */
+//  Shimmer Skeleton Loading matching the Detail Screen layout.
 @Composable
 private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
     Column(

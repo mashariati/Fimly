@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -85,15 +87,14 @@ fun FimlyErrorState(
     }
 }
 
-/**
- * Empty State component when search or lists return no items.
- */
+// Empty State component when search or lists return no items.
 @Composable
 fun FimlyEmptyState(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
-    @DrawableRes iconRes: Int? = R.drawable.ic_folder
+    @DrawableRes iconRes: Int? = R.drawable.ic_folder,
+    iconTint: Color? = null
 ) {
     Column(
         modifier = modifier
@@ -106,7 +107,8 @@ fun FimlyEmptyState(
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = "Empty State Icon",
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(72.dp),
+                colorFilter = iconTint?.let { ColorFilter.tint(it) }
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -125,23 +127,6 @@ fun FimlyEmptyState(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
-        )
-    }
-}
-
-/**
- * Centered Loading Indicator.
- */
-@Composable
-fun FimlyLoadingIndicator(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary
         )
     }
 }
