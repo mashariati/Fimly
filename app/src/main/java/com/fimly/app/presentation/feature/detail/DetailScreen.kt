@@ -24,9 +24,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.fimly.app.R
 import com.fimly.app.domain.model.Genre
@@ -56,50 +61,47 @@ import com.fimly.app.domain.model.ProductionCompany
 import com.fimly.app.presentation.component.FimlyEmptyState
 import com.fimly.app.presentation.component.FimlyErrorState
 import com.fimly.app.presentation.component.shimmerEffect
+import com.fimly.app.presentation.core.ContentState
 import com.fimly.app.presentation.theme.FimlyTheme
 import com.fimly.app.presentation.theme.SecondaryOrange
 import com.fimly.app.presentation.theme.SecondaryRed
+import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
-
-/**
- * Stateful Detail Screen entry point (Currently running on Dummy Data).
- */
 @Composable
 fun DetailScreen(
     movieId: Int,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: DetailViewModel = koinViewModel(parameters = { parametersOf(movieId) })
 ) {
-    var uiState by remember { mutableStateOf(dummyDetailSuccessState) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackBarHostState = remember { SnackbarHostState() }
 
-    DetailContent(
-        state = uiState,
-        onBackClick = onNavigateBack,
-        onFavoriteClick = {
-            val currentContent = uiState.contentState
-            if (currentContent is DetailContentState.Success) {
-                val updatedMovie = currentContent.movie.copy(
-                    isFavorite = !currentContent.movie.isFavorite
-                )
-                uiState = uiState.copy(
-                    contentState = DetailContentState.Success(updatedMovie)
-                )
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is DetailEffect.NavigateBack -> onNavigateBack()
+                is DetailEffect.ShowSnackBar -> snackBarHostState.showSnackbar(effect.message)
             }
-        },
-        onRetryClick = {
-            uiState = dummyDetailSuccessState
         }
-    )
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackBarHostState) }
+    ) { innerPadding ->
+        DetailContent(
+            state = uiState,
+            onIntent = viewModel::onIntent,
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+        )
+    }
 }
 
-/**
- * Stateless Detail Content handling Loading, Error, Empty, and Success states.
- */
 @Composable
 fun DetailContent(
     state: DetailState,
-    onBackClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
-    onRetryClick: () -> Unit,
+    onIntent: (DetailIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -108,17 +110,19 @@ fun DetailContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         when (val content = state.contentState) {
-            is DetailContentState.Loading -> {
-                DetailSkeletonLoading(onBackClick = onBackClick)
+            is ContentState.Loading -> {
+                DetailSkeletonLoading(
+                    onBackClick = { onIntent(DetailIntent.BackClicked) }
+                )
             }
 
-            is DetailContentState.Error -> {
+            is ContentState.Error -> {
                 Column(modifier = Modifier.fillMaxSize()) {
                     DetailTopBar(
                         title = "",
                         isFavorite = false,
                         showFavoriteButton = false,
-                        onBackClick = onBackClick,
+                        onBackClick = { onIntent(DetailIntent.BackClicked) },
                         onFavoriteClick = {}
                     )
                     Box(
@@ -127,19 +131,19 @@ fun DetailContent(
                     ) {
                         FimlyErrorState(
                             message = content.message,
-                            onRetryClick = onRetryClick
+                            onRetryClick = { onIntent(DetailIntent.RetryClicked) }
                         )
                     }
                 }
             }
 
-            is DetailContentState.Empty -> {
+            is ContentState.Empty -> {
                 Column(modifier = Modifier.fillMaxSize()) {
                     DetailTopBar(
                         title = "",
                         isFavorite = false,
                         showFavoriteButton = false,
-                        onBackClick = onBackClick,
+                        onBackClick = { onIntent(DetailIntent.BackClicked) },
                         onFavoriteClick = {}
                     )
                     Box(
@@ -154,11 +158,11 @@ fun DetailContent(
                 }
             }
 
-            is DetailContentState.Success -> {
+            is ContentState.Success -> {
                 DetailSuccessView(
-                    movie = content.movie,
-                    onBackClick = onBackClick,
-                    onFavoriteClick = onFavoriteClick
+                    movie = content.data,
+                    onBackClick = { onIntent(DetailIntent.BackClicked) },
+                    onFavoriteClick = { onIntent(DetailIntent.ToggleFavoriteClicked) }
                 )
             }
         }
@@ -224,7 +228,7 @@ private fun DetailSuccessView(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Center Movie Poster (205dp x 287dp, Shape Medium = 12dp)
+            // Center Movie Poster (205dp x 287dp, Shape Small = 12dp)
             Surface(
                 modifier = Modifier
                     .width(205.dp)
@@ -295,7 +299,7 @@ private fun DetailSuccessView(
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
 
-            // Production Companies Section (Replaces Cast & Crew using real TMDB detail response)
+            // Production Companies Section
             if (movie.productionCompanies.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(24.dp))
                 ProductionCompaniesSection(companies = movie.productionCompanies)
@@ -362,7 +366,7 @@ private fun DetailTopBar(
             ) {
                 Icon(
                     painter = painterResource(
-                        id = if (isFavorite) R.drawable.heart else R.drawable.heart//todo: change it to outline heart
+                        id = if (isFavorite) R.drawable.heart else R.drawable.heart
                     ),
                     contentDescription = "Toggle Favorite",
                     tint = if (isFavorite) SecondaryRed else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -793,17 +797,38 @@ private fun DetailSkeletonLoading(onBackClick: () -> Unit) {
     }
 }
 
-// --- Previews (Dark, Light, Loading, Error) ---
+
+private val previewMovieDetail = MovieDetail(
+    id = 11,
+    title = "Star Wars",
+    originalTitle = "Star Wars",
+    tagline = "A long time ago in a galaxy far, far away...",
+    overview = "Princess Leia is captured and held hostage by the evil Imperial forces in their effort to take over the galactic Empire.",
+    posterPath = "/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg",
+    backdropPath = "/2w4xG178RpB4MDAIfTkqAuSJzec.jpg",
+    releaseDate = "1977-05-25",
+    runtime = 121,
+    voteAverage = 8.2,
+    voteCount = 22061,
+    genres = listOf(Genre(12, "Adventure"), Genre(28, "Action")),
+    productionCompanies = listOf(
+        ProductionCompany(1, "Lucasfilm Ltd.", "/tlVSws0RvvtPBwViUyOFAO0vcQS.png", "US")
+    ),
+    status = "Released",
+    originalLanguage = "EN",
+    budget = 11_000_000,
+    revenue = 775_398_007,
+    homepage = null,
+    isFavorite = true
+)
 
 @Preview(showBackground = true, name = "1. Detail - Dark Mode (Success)")
 @Composable
 private fun DetailDarkPreview() {
     FimlyTheme(darkTheme = true) {
         DetailContent(
-            state = dummyDetailSuccessState,
-            onBackClick = {},
-            onFavoriteClick = {},
-            onRetryClick = {}
+            state = DetailState(contentState = ContentState.Success(previewMovieDetail)),
+            onIntent = {}
         )
     }
 }
@@ -813,10 +838,8 @@ private fun DetailDarkPreview() {
 private fun DetailLightPreview() {
     FimlyTheme(darkTheme = false) {
         DetailContent(
-            state = dummyDetailSuccessState,
-            onBackClick = {},
-            onFavoriteClick = {},
-            onRetryClick = {}
+            state = DetailState(contentState = ContentState.Success(previewMovieDetail)),
+            onIntent = {}
         )
     }
 }
@@ -826,10 +849,8 @@ private fun DetailLightPreview() {
 private fun DetailLoadingPreview() {
     FimlyTheme(darkTheme = true) {
         DetailContent(
-            state = DetailState(contentState = DetailContentState.Loading),
-            onBackClick = {},
-            onFavoriteClick = {},
-            onRetryClick = {}
+            state = DetailState(contentState = ContentState.Loading),
+            onIntent = {}
         )
     }
 }
@@ -840,11 +861,9 @@ private fun DetailErrorPreview() {
     FimlyTheme(darkTheme = true) {
         DetailContent(
             state = DetailState(
-                contentState = DetailContentState.Error("Failed to load movie details. Please try again.")
+                contentState = ContentState.Error("Failed to load movie details. Please try again.")
             ),
-            onBackClick = {},
-            onFavoriteClick = {},
-            onRetryClick = {}
+            onIntent = {}
         )
     }
 }
