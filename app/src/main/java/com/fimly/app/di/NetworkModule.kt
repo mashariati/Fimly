@@ -35,10 +35,7 @@ val networkModule = module {
             }
 
             defaultRequest {
-                url {
-                    protocol = URLProtocol.HTTPS
-                    host = BuildConfig.TMDB_BASE_URL
-                }
+                url (BuildConfig.TMDB_BASE_URL)
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Authorization, "Bearer ${BuildConfig.TMDB_BEARER_TOKEN}")
                 header(HttpHeaders.Accept, "application/json")

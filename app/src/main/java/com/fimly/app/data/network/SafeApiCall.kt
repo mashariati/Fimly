@@ -21,7 +21,7 @@ suspend inline fun <reified T> safeApiCall(
     val response = try {
         execute()
     } catch (e: CancellationException) {
-        // Crucial: Always rethrow CancellationException to preserve structured concurrency
+        // Always rethrow CancellationException to preserve structured concurrency
         throw e
     } catch (e: UnknownHostException) {
         return AppResult.Error(DataError.NO_INTERNET, "No internet connection")

@@ -59,7 +59,6 @@ fun OnboardingContent(
     onGetStartedClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // گرفتن رنگ پس‌زمینه از تم جاری برای پشتیبانی ۱۰۰٪ از لایت و دارک مود
     val backgroundColor = MaterialTheme.colorScheme.background
 
     Box(
@@ -67,7 +66,6 @@ fun OnboardingContent(
             .fillMaxSize()
             .background(backgroundColor)
     ) {
-        // 1. Full-Screen Background Image
         Image(
             painter = painterResource(id = R.drawable.bg_onboarding),
             contentDescription = null,
@@ -75,7 +73,6 @@ fun OnboardingContent(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. Gradient Overlay (Adapts perfectly to Light/Dark Mode)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -90,7 +87,6 @@ fun OnboardingContent(
                 )
         )
 
-        // 3. Bottom Card Container
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -106,7 +102,6 @@ fun OnboardingContent(
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Headline for Fimly
                 Text(
                     text = "Welcome to Fimly",
                     style = MaterialTheme.typography.headlineSmall,
@@ -116,7 +111,6 @@ fun OnboardingContent(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Fimly Subtitle Copy
                 Text(
                     text = "Discover top-rated movies, explore new releases, and build your ultimate offline watchlist.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -126,7 +120,6 @@ fun OnboardingContent(
 
                 Spacer(modifier = Modifier.height(36.dp))
 
-                // Full-width Get Started Button (Replaces dots and side-button for a single-page flow)
                 Button(
                     onClick = onGetStartedClick,
                     modifier = Modifier

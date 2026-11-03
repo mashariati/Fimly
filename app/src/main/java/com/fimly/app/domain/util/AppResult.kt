@@ -13,9 +13,8 @@ enum class DataError {
     UNKNOWN
 }
 
-/**
- * A generic sealed interface representing the outcome of an operation.
- */
+// A generic sealed interface representing the outcome of an operation.
+
 sealed interface AppResult<out D, out E> {
     data class Success<out D>(val data: D) : AppResult<D, Nothing>
     data class Error<out E>(val error: E, val message: String? = null) : AppResult<Nothing, E>
