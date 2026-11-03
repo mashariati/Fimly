@@ -9,6 +9,7 @@ enum class DataError {
     UNAUTHORIZED,
     SERVER_ERROR,
     SERIALIZATION_ERROR,
+    TOO_MANY_REQUESTS,
     UNKNOWN
 }
 

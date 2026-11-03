@@ -31,6 +31,10 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiEffect>(
         get() = _uiState.value
 
 
+    fun onIntent(intent: I) {
+        handleIntent(intent)
+    }
+
     protected abstract fun handleIntent(intent: I)
 
     protected fun updateState(reducer: S.() -> S) {

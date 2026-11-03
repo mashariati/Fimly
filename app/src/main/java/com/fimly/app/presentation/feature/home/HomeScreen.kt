@@ -1,6 +1,5 @@
 package com.fimly.app.presentation.feature.home
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -22,155 +21,158 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.fimly.app.domain.model.Genre
 import com.fimly.app.domain.model.Movie
-import com.fimly.app.presentation.component.FimlyEmptyState
-import com.fimly.app.presentation.component.FimlyErrorState
-import com.fimly.app.presentation.component.FimlyMovieRowSection
+import com.fimly.app.presentation.component.FimlyMovieCard
+import com.fimly.app.presentation.component.FimlySectionHeader
 import com.fimly.app.presentation.component.shimmerEffect
+import com.fimly.app.presentation.core.ContentState
 import com.fimly.app.presentation.theme.FimlyTheme
-import com.fimly.app.presentation.theme.PrimarySoft
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
-    onNavigateToDetail: (Int) -> Unit = {}
+    onNavigateToDetail: (Int) -> Unit = {},
+    viewModel: HomeViewModel = koinViewModel()
 ) {
-    var uiState by remember { mutableStateOf(dummyHomeSuccessState) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is HomeEffect.NavigateToDetail -> onNavigateToDetail(effect.movieId)
+            }
+        }
+    }
 
     HomeContent(
         state = uiState,
-        onCategorySelect = { categoryId ->
-            uiState = uiState.copy(selectedCategoryId = categoryId)
-        },
-        onMovieClick = onNavigateToDetail,
-        onRetryClick = {
-            uiState = dummyHomeSuccessState
-        }
+        onIntent = viewModel::onIntent
     )
 }
 
 @Composable
 fun HomeContent(
     state: HomeState,
-    onCategorySelect: (Int?) -> Unit,
-    onMovieClick: (Int) -> Unit,
-    onRetryClick: () -> Unit,
+    onIntent: (HomeIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(top = 24.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        when (val content = state.contentState) {
-            is HomeContentState.Loading -> {
-                HomeSkeletonLoading()
-            }
+        item(key = "hero_banner_section") {
+            BannerSectionContainer(
+                bannerState = state.bannerState,
+                onMovieClick = { movieId -> onIntent(HomeIntent.MovieClicked(movieId)) },
+                onRetryClick = { onIntent(HomeIntent.RetrySection(HomeSection.BANNER)) }
+            )
+        }
 
-            is HomeContentState.Error -> {
-                FimlyErrorState(
-                    message = content.message,
-                    onRetryClick = onRetryClick,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+        item(key = "categories_section") {
+            CategoriesSectionContainer(
+                genresState = state.genresState,
+                selectedGenreId = state.selectedGenreId,
+                onGenreSelect = { genreId -> onIntent(HomeIntent.SelectGenre(genreId)) },
+                onRetryClick = { onIntent(HomeIntent.RetrySection(HomeSection.GENRES)) }
+            )
+        }
 
-            is HomeContentState.Empty -> {
-                FimlyEmptyState(
-                    title = "No Movies Found",
-                    subtitle = "We couldn't find any movies for the selected category.",
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+        item(key = "most_popular_section") {
+            MovieRowSectionContainer(
+                title = "Most popular",
+                sectionState = state.mostPopularState,
+                onMovieClick = { movieId -> onIntent(HomeIntent.MovieClicked(movieId)) },
+                onRetryClick = { onIntent(HomeIntent.RetrySection(HomeSection.MOST_POPULAR)) }
+            )
+        }
 
-            is HomeContentState.Success -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 24.dp, bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // 1. Hero Banner Carousel
-                    if (content.bannerMovies.isNotEmpty()) {
-                        item(key = "hero_carousel") {
-                            HeroBannerCarousel(
-                                movies = content.bannerMovies,
-                                onMovieClick = onMovieClick,
-                            )
-                        }
-                    }
+        item(key = "now_playing_section") {
+            MovieRowSectionContainer(
+                title = "Now playing",
+                sectionState = state.nowPlayingState,
+                onMovieClick = { movieId -> onIntent(HomeIntent.MovieClicked(movieId)) },
+                onRetryClick = { onIntent(HomeIntent.RetrySection(HomeSection.NOW_PLAYING)) }
+            )
+        }
 
-                    // Categories Filter Strip
-                    item(key = "categories_section") {
-                        CategoriesSection(
-                            categories = state.categories,
-                            selectedCategoryId = state.selectedCategoryId,
-                            onCategorySelect = onCategorySelect
-                        )
-                    }
+        item(key = "top_rated_section") {
+            MovieRowSectionContainer(
+                title = "Top rated",
+                sectionState = state.topRatedState,
+                onMovieClick = { movieId -> onIntent(HomeIntent.MovieClicked(movieId)) },
+                onRetryClick = { onIntent(HomeIntent.RetrySection(HomeSection.TOP_RATED)) }
+            )
+        }
 
-                    // Most Popular Movies Row
-                    if (content.mostPopularMovies.isNotEmpty()) {
-                        item(key = "most_popular_row") {
-                            FimlyMovieRowSection(
-                                title = "Most popular",
-                                movies = content.mostPopularMovies,
-                                onMovieClick = onMovieClick,
-//                                onSeeAllClick = {}
-                            )
-                        }
-                    }
+        item(key = "upcoming_section") {
+            MovieRowSectionContainer(
+                title = "Upcoming",
+                sectionState = state.upcomingState,
+                onMovieClick = { movieId -> onIntent(HomeIntent.MovieClicked(movieId)) },
+                onRetryClick = { onIntent(HomeIntent.RetrySection(HomeSection.UPCOMING)) }
+            )
+        }
+    }
+}
 
-                    // Now Playing Movies Row
-                    if (content.nowPlayingMovies.isNotEmpty()) {
-                        item(key = "now_playing_row") {
-                            FimlyMovieRowSection(
-                                title = "Now playing",
-                                movies = content.nowPlayingMovies,
-                                onMovieClick = onMovieClick
-                            )
-                        }
-                    }
 
-                    // Top Rated Movies Row
-                    if (content.topRatedMovies.isNotEmpty()) {
-                        item(key = "top_rated_row") {
-                            FimlyMovieRowSection(
-                                title = "Top rated",
-                                movies = content.topRatedMovies,
-                                onMovieClick = onMovieClick
-                            )
-                        }
-                    }
+@Composable
+private fun BannerSectionContainer(
+    bannerState: ContentState<List<Movie>>,
+    onMovieClick: (Int) -> Unit,
+    onRetryClick: () -> Unit
+) {
+    when (bannerState) {
+        is ContentState.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 36.dp)
+                    .height(165.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .shimmerEffect()
+            )
+        }
 
-                    // Upcoming Movies Row
-                    if (content.upcomingMovies.isNotEmpty()) {
-                        item(key = "upcoming_row") {
-                            FimlyMovieRowSection(
-                                title = "Upcoming",
-                                movies = content.upcomingMovies,
-                                onMovieClick = onMovieClick
-                            )
-                        }
-                    }
-                }
-            }
+        is ContentState.Error -> {
+            SectionInlineErrorCard(
+                message = bannerState.message,
+                onRetryClick = onRetryClick,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        }
+
+        is ContentState.Empty -> Unit
+
+        is ContentState.Success -> {
+            HeroBannerCarousel(
+                movies = bannerState.data,
+                onMovieClick = onMovieClick
+            )
         }
     }
 }
@@ -201,7 +203,6 @@ private fun HeroBannerCarousel(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Animated Page Indicators
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -273,7 +274,7 @@ private fun HeroBannerItem(
         ) {
             Text(
                 text = movie.title,
-                style = MaterialTheme.typography.titleMedium, // 16sp SemiBold
+                style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -283,18 +284,20 @@ private fun HeroBannerItem(
 
             Text(
                 text = "Release: ${movie.releaseDate.ifBlank { movie.releaseYear }}",
-                style = MaterialTheme.typography.bodySmall, // 12sp Medium
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.75f)
             )
         }
     }
 }
 
+
 @Composable
-private fun CategoriesSection(
-    categories: List<MovieCategory>,
-    selectedCategoryId: Int?,
-    onCategorySelect: (Int?) -> Unit
+private fun CategoriesSectionContainer(
+    genresState: ContentState<List<Genre>>,
+    selectedGenreId: Int?,
+    onGenreSelect: (Int?) -> Unit,
+    onRetryClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -306,98 +309,133 @@ private fun CategoriesSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = categories,
-                key = { it.id ?: -1 }
-            ) { category ->
-                val isSelected = category.id == selectedCategoryId
-
-                Box(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.extraSmall) // 8.dp radius
-                        .background(
-                            if (isSelected) {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            } else {
-                                Color.Transparent
-                            }
-                        )
-                        .clickable { onCategorySelect(category.id) }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
+        when (genresState) {
+            is ContentState.Loading -> {
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
+                    repeat(5) {
+                        Box(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(34.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .shimmerEffect()
+                        )
+                    }
                 }
+            }
+
+            is ContentState.Error -> {
+                SectionInlineErrorCard(
+                    message = genresState.message,
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            }
+
+            is ContentState.Empty -> {
+                CategoriesChipRow(
+                    genres = emptyList(),
+                    selectedGenreId = selectedGenreId,
+                    onGenreSelect = onGenreSelect
+                )
+            }
+
+            is ContentState.Success -> {
+                CategoriesChipRow(
+                    genres = genresState.data,
+                    selectedGenreId = selectedGenreId,
+                    onGenreSelect = onGenreSelect
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HomeSkeletonLoading() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+private fun CategoriesChipRow(
+    genres: List<Genre>,
+    selectedGenreId: Int?,
+    onGenreSelect: (Int?) -> Unit
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Banner Skeleton
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 36.dp)
-                .height(165.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .shimmerEffect()
-        )
-
-        // Categories Skeleton
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            Box(
-                modifier = Modifier
-                    .width(100.dp)
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+        item(key = "genre_all") {
+            CategoryChipItem(
+                name = "All",
+                isSelected = selectedGenreId == null,
+                onClick = { onGenreSelect(null) }
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(4) {
-                    Box(
-                        modifier = Modifier
-                            .width(80.dp)
-                            .height(34.dp)
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .shimmerEffect()
-                    )
-                }
-            }
         }
 
-        // Movie Rows Skeleton
-        repeat(2) {
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Box(
-                    modifier = Modifier
-                        .width(120.dp)
-                        .height(20.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .shimmerEffect()
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(
+            items = genres,
+            key = { it.id }
+        ) { genre ->
+            CategoryChipItem(
+                name = genre.name,
+                isSelected = genre.id == selectedGenreId,
+                onClick = { onGenreSelect(genre.id) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryChipItem(
+    name: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.extraSmall)
+            .background(
+                if (isSelected) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    Color.Transparent
+                }
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
+    }
+}
+
+
+@Composable
+private fun MovieRowSectionContainer(
+    title: String,
+    sectionState: ContentState<List<Movie>>,
+    onMovieClick: (Int) -> Unit,
+    onRetryClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        FimlySectionHeader(title = title)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when (sectionState) {
+            is ContentState.Loading -> {
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     repeat(3) {
                         Box(
                             modifier = Modifier
@@ -409,61 +447,161 @@ private fun HomeSkeletonLoading() {
                     }
                 }
             }
+
+            is ContentState.Error -> {
+                SectionInlineErrorCard(
+                    message = sectionState.message,
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            }
+
+            is ContentState.Empty -> {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ) {
+                    Text(
+                        text = "No movies available in this category.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 24.dp, horizontal = 16.dp)
+                    )
+                }
+            }
+
+            is ContentState.Success -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = sectionState.data,
+                        key = { it.id }
+                    ) { movie ->
+                        FimlyMovieCard(
+                            movie = movie,
+                            onMovieClick = onMovieClick
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionInlineErrorCard(
+    message: String,
+    onRetryClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp)
+            )
+
+            TextButton(
+                onClick = onRetryClick,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = "Retry",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
         }
     }
 }
 
 
-@Preview(showBackground = true, name = "1. Home - Success State",)
-@Composable
-private fun HomeSuccessPreview() {
-    FimlyTheme(darkTheme = true) {
-        HomeContent(
-            state = dummyHomeSuccessState,
-            onCategorySelect = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
+private val previewMovies = listOf(
+    Movie(
+        id = 155,
+        title = "The Dark Knight",
+        originalTitle = "The Dark Knight",
+        overview = "Batman raises the stakes in his war on crime.",
+        posterPath = "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+        backdropPath = "/9FE5eD92WfVCiivM9Pq9GVSrlWk.jpg",
+        releaseDate = "2008-07-16",
+        popularity = 4135.6,
+        voteAverage = 8.5,
+        voteCount = 37150,
+        isAdult = false,
+        genreIds = listOf(28, 53)
+    ),
+    Movie(
+        id = 969681,
+        title = "Spider-Man: Brand New Day",
+        originalTitle = "Spider-Man: Brand New Day",
+        overview = "Fighting crime full-time as Spider-Man.",
+        posterPath = "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        backdropPath = "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
+        releaseDate = "2026-07-29",
+        popularity = 390.9,
+        voteAverage = 8.4,
+        voteCount = 6376,
+        isAdult = false,
+        genreIds = listOf(878, 28)
+    )
+)
 
-@Preview(showBackground = true, name = "2. Home - Skeleton Loading State")
-@Composable
-private fun HomeLoadingPreview() {
-    FimlyTheme(darkTheme = true) {
-        HomeContent(
-            state = HomeState(contentState = HomeContentState.Loading),
-            onCategorySelect = {},
-            onMovieClick = {},
-            onRetryClick = {}
-        )
-    }
-}
+private val previewGenres = listOf(
+    Genre(id = 28, name = "Action"),
+    Genre(id = 35, name = "Comedy"),
+    Genre(id = 16, name = "Animation")
+)
 
-@Preview(showBackground = true, name = "3. Home - Error State")
+@Preview(showBackground = true, name = "1. Home - Mixed States (Success + Section Error)")
 @Composable
-private fun HomeErrorPreview() {
+private fun HomeMixedPreview() {
     FimlyTheme(darkTheme = true) {
         HomeContent(
             state = HomeState(
-                contentState = HomeContentState.Error("No internet connection. Please check your network settings.")
+                selectedGenreId = null,
+                genresState = ContentState.Success(previewGenres),
+                bannerState = ContentState.Success(previewMovies),
+                mostPopularState = ContentState.Success(previewMovies),
+                nowPlayingState = ContentState.Error("Failed to load Now Playing movies."),
+                topRatedState = ContentState.Success(previewMovies),
+                upcomingState = ContentState.Loading
             ),
-            onCategorySelect = {},
-            onMovieClick = {},
-            onRetryClick = {}
+            onIntent = {}
         )
     }
 }
 
-@Preview(showBackground = true, name = "4. Home - Empty State")
+@Preview(showBackground = true, name = "2. Home - Full Skeleton Loading")
 @Composable
-private fun HomeEmptyPreview() {
+private fun HomeFullLoadingPreview() {
     FimlyTheme(darkTheme = true) {
         HomeContent(
-            state = HomeState(contentState = HomeContentState.Empty),
-            onCategorySelect = {},
-            onMovieClick = {},
-            onRetryClick = {}
+            state = HomeState(),
+            onIntent = {}
         )
     }
 }
