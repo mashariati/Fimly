@@ -1,4 +1,3 @@
 package com.fimly.app.domain.util
 
-class DomainConstants {
-}
+const val BASE_URL_IMAGE = "https://image.tmdb.org/t/p"

@@ -1,5 +1,6 @@
 package com.fimly.app.domain.model
 
+import com.fimly.app.domain.util.BASE_URL_IMAGE
 import java.util.Locale
 
 
@@ -10,7 +11,7 @@ data class ProductionCompany(
     val originCountry: String
 ) {
     val fullLogoUrl: String?
-        get() = logoPath?.let { "https://image.tmdb.org/t/p/w500$it" }//todo : change it to a Constraint variable
+        get() = logoPath?.let { "${BASE_URL_IMAGE}/w500$it" }
 }
 
 data class MovieDetail(
@@ -35,10 +36,10 @@ data class MovieDetail(
     val isFavorite: Boolean = false
 ) {
     val fullPosterUrl: String?
-        get() = posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
+        get() = posterPath?.let { "${BASE_URL_IMAGE}/w500$it" }
 
     val fullBackdropUrl: String?
-        get() = backdropPath?.let { "https://image.tmdb.org/t/p/w780$it" }
+        get() = backdropPath?.let { "${BASE_URL_IMAGE}/w780$it" }
 
     val releaseYear: String
         get() = releaseDate.takeIf { it.length >= 4 }?.substring(0, 4) ?: "N/A"
