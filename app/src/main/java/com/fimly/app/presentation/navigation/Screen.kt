@@ -2,9 +2,7 @@ package com.fimly.app.presentation.navigation
 
 import kotlinx.serialization.Serializable
 
-/**
- * Root level destinations (Full-screen flows without Bottom Navigation Bar)
- */
+// Root level destinations (Full-screen flows without Bottom Navigation Bar)
 sealed interface RootRoute {
     @Serializable
     data object StartupGraph : RootRoute
@@ -24,9 +22,7 @@ sealed interface RootRoute {
     data class MovieDetail(val movieId: Int) : RootRoute
 }
 
-/**
- * Bottom Navigation Bar tab destinations inside MainContainer
- */
+// Bottom Navigation Bar tab destinations inside MainContainer
 sealed interface BottomTabRoute {
     @Serializable
     data object Home : BottomTabRoute
