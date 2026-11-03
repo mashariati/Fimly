@@ -1,6 +1,7 @@
 package com.fimly.app.di
 
 import com.fimly.app.presentation.feature.detail.DetailViewModel
+import com.fimly.app.presentation.feature.favorites.FavoritesViewModel
 import com.fimly.app.presentation.feature.home.HomeViewModel
 import com.fimly.app.presentation.feature.onboarding.OnboardingViewModel
 import com.fimly.app.presentation.feature.search.SearchViewModel
@@ -22,4 +23,6 @@ val viewModelModule = module {
             toggleFavoriteMovieUseCase = get()
         )
     }
+    viewModelOf(::FavoritesViewModel)
+
 }

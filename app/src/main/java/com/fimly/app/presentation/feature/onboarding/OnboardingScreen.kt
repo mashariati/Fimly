@@ -49,7 +49,7 @@ fun OnboardingScreen(
 
     OnboardingContent(
         onGetStartedClick = {
-            viewModel.handleIntent(OnboardingIntent.CompleteOnboardingClick)
+            viewModel.onIntent(OnboardingIntent.CompleteOnboardingClick)
         }
     )
 }

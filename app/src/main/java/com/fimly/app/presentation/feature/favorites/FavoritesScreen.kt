@@ -13,30 +13,33 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -47,55 +50,54 @@ import com.fimly.app.presentation.component.FimlyEmptyState
 import com.fimly.app.presentation.component.FimlyErrorState
 import com.fimly.app.presentation.component.TmdbGenreHelper
 import com.fimly.app.presentation.component.shimmerEffect
+import com.fimly.app.presentation.core.ContentState
 import com.fimly.app.presentation.theme.FimlyTheme
 import com.fimly.app.presentation.theme.SecondaryOrange
 import com.fimly.app.presentation.theme.SecondaryRed
+import org.koin.androidx.compose.koinViewModel
 
-/**
- * Stateful Favorites Screen entry point (Interactive with Dummy Data).
- * Clicking the heart icon removes the movie from the list and transitions to Empty state when all are removed.
- */
 @Composable
 fun FavoritesScreen(
-    onNavigateToDetail: (Int) -> Unit = {}
+    onNavigateToDetail: (Int) -> Unit = {},
+    viewModel: FavoritesViewModel = koinViewModel()
 ) {
-    var uiState by remember { mutableStateOf(dummyFavoritesSuccessState) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackBarHostState = remember { SnackbarHostState() }
 
-    FavoritesContent(
-        state = uiState,
-        onMovieClick = onNavigateToDetail,
-        onRemoveFavoriteClick = { movieToRemove ->
-            val currentContent = uiState.contentState
-            if (currentContent is FavoritesContentState.Success) {
-                val updatedList = currentContent.movies.filterNot { it.id == movieToRemove.id }
-                uiState = uiState.copy(
-                    contentState = if (updatedList.isEmpty()) {
-                        FavoritesContentState.Empty
-                    } else {
-                        FavoritesContentState.Success(updatedList)
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is FavoritesEffect.NavigateToDetail -> onNavigateToDetail(effect.movieId)
+                is FavoritesEffect.ShowUndoSnackBar -> {
+                    val result = snackBarHostState.showSnackbar(
+                        message = effect.message,
+                        actionLabel = "Undo",
+                        duration = SnackbarDuration.Short
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.onIntent(FavoritesIntent.UndoRemoveFavorite(effect.removedMovie))
                     }
-                )
+                }
             }
-        },
-        onClearAllClick = {
-            uiState = uiState.copy(contentState = FavoritesContentState.Empty)
-        },
-        onRetryClick = {
-            uiState = dummyFavoritesSuccessState
         }
-    )
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackBarHostState) }
+    ) { innerPadding ->
+        FavoritesContent(
+            state = uiState,
+            onIntent = viewModel::onIntent,
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+        )
+    }
 }
 
-/**
- * Stateless Favorites Content handling Loading, Empty, Error, and Success states.
- */
 @Composable
 fun FavoritesContent(
     state: FavoritesState,
-    onMovieClick: (Int) -> Unit,
-    onRemoveFavoriteClick: (Movie) -> Unit,
-    onRetryClick: () -> Unit,
-    onClearAllClick: () -> Unit,
+    onIntent: (FavoritesIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -105,7 +107,7 @@ fun FavoritesContent(
             .padding(top = 24.dp)
     ) {
         val currentContent = state.contentState
-        if (currentContent is FavoritesContentState.Success && currentContent.movies.isNotEmpty()) {
+        if (currentContent is ContentState.Success && currentContent.data.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -114,18 +116,17 @@ fun FavoritesContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${currentContent.movies.size} Saved Movies",
+                    text = "${currentContent.data.size} Saved Movies",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
-                // Delete All Button with Trash Icon
                 Surface(
                     shape = MaterialTheme.shapes.extraSmall,
                     color = SecondaryRed.copy(alpha = 0.12f),
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable { onClearAllClick() }
+                        .clickable { onIntent(FavoritesIntent.ClearAllFavoritesClicked) }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -150,36 +151,35 @@ fun FavoritesContent(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Dynamic Content Area
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
             when (val content = state.contentState) {
-                is FavoritesContentState.Loading -> {
+                is ContentState.Loading -> {
                     FavoritesSkeletonLoading()
                 }
 
-                is FavoritesContentState.Empty -> {
+                is ContentState.Empty -> {
                     FimlyEmptyState(
                         title = "Your Favorites List is Empty",
                         subtitle = "Explore movies and tap the heart icon to save your favorite titles for offline access.",
-                        iconRes = R.drawable.heart,//todo:double check it
+                        iconRes = R.drawable.heart,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                is FavoritesContentState.Error -> {
+                is ContentState.Error -> {
                     FimlyErrorState(
                         message = content.message,
-                        onRetryClick = onRetryClick,
+                        onRetryClick = {},
                         iconRes = R.drawable.notification,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                is FavoritesContentState.Success -> {
+                is ContentState.Success -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
@@ -191,13 +191,13 @@ fun FavoritesContent(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(
-                            items = content.movies,
+                            items = content.data,
                             key = { it.id }
                         ) { movie ->
                             FavoriteMovieCard(
                                 movie = movie,
-                                onCardClick = { onMovieClick(movie.id) },
-                                onRemoveClick = { onRemoveFavoriteClick(movie) },
+                                onCardClick = { onIntent(FavoritesIntent.MovieClicked(movie.id)) },
+                                onRemoveClick = { onIntent(FavoritesIntent.RemoveFavoriteClicked(movie)) },
                                 modifier = Modifier.animateItem()
                             )
                         }
@@ -208,10 +208,6 @@ fun FavoritesContent(
     }
 }
 
-/**
- * Horizontal Card matching the Figma Wishlist design (16dp container radius, 12dp internal padding,
- * landscape image on the left, genre/title/metadata/heart on the right) with explicit Coil disk caching.
- */
 @Composable
 private fun FavoriteMovieCard(
     movie: Movie,
@@ -222,7 +218,6 @@ private fun FavoriteMovieCard(
     val context = LocalContext.current
     val imageUrl = movie.fullBackdropUrl ?: movie.fullPosterUrl
 
-    // Explicit Coil caching strategy so favorite images persist offline
     val imageRequest = remember(imageUrl) {
         ImageRequest.Builder(context)
             .data(imageUrl)
@@ -249,7 +244,6 @@ private fun FavoriteMovieCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Landscape Thumbnail (120dp x 86dp, 8dp corner radius)
             AsyncImage(
                 model = imageRequest,
                 contentDescription = movie.title,
@@ -261,12 +255,10 @@ private fun FavoriteMovieCard(
                     .background(MaterialTheme.colorScheme.background)
             )
 
-            // Right Content Column (Genre, Title, Year + Rating + Remove Heart)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Primary Genre Caption
                 Text(
                     text = TmdbGenreHelper.getGenreNames(movie.genreIds, limit = 1),
                     style = MaterialTheme.typography.bodySmall,
@@ -275,7 +267,6 @@ private fun FavoriteMovieCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Movie Title (Up to 2 lines per Figma Wishlist card)
                 Text(
                     text = movie.title,
                     style = MaterialTheme.typography.labelLarge,
@@ -284,7 +275,6 @@ private fun FavoriteMovieCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Bottom Row: Release Year + Rating Star + Remove Favorite Heart Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -305,7 +295,7 @@ private fun FavoriteMovieCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.heart), // Replace with R.drawable.ic_star
+                                painter = painterResource(id = R.drawable.star),
                                 contentDescription = "Rating",
                                 tint = SecondaryOrange,
                                 modifier = Modifier.size(14.dp)
@@ -318,7 +308,6 @@ private fun FavoriteMovieCard(
                         }
                     }
 
-                    // Remove from Favorites Action (Red Filled Heart)
                     Box(
                         modifier = Modifier
                             .size(32.dp)
@@ -339,9 +328,6 @@ private fun FavoriteMovieCard(
     }
 }
 
-/**
- * Shimmer Skeleton Loading matching the Favorites card layout.
- */
 @Composable
 private fun FavoritesSkeletonLoading() {
     Column(
@@ -403,19 +389,32 @@ private fun FavoritesSkeletonLoading() {
     }
 }
 
-// --- Previews (Dark, Light, Empty, Loading, Error) ---
+
+private val previewFavoriteMovies = listOf(
+    Movie(
+        id = 155,
+        title = "The Dark Knight",
+        originalTitle = "The Dark Knight",
+        overview = "Batman raises the stakes in his war on crime.",
+        posterPath = "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+        backdropPath = "/9FE5eD92WfVCiivM9Pq9GVSrlWk.jpg",
+        releaseDate = "2008-07-16",
+        popularity = 4135.6,
+        voteAverage = 8.5,
+        voteCount = 37150,
+        isAdult = false,
+        genreIds = listOf(28, 53),
+        isFavorite = true
+    )
+)
 
 @Preview(showBackground = true, name = "1. Favorites - Dark Mode (Success)")
 @Composable
 private fun FavoritesDarkPreview() {
     FimlyTheme(darkTheme = true) {
         FavoritesContent(
-            state = dummyFavoritesSuccessState,
-            onMovieClick = {},
-            onRemoveFavoriteClick = {},
-            onRetryClick = {},
-            onClearAllClick= {},
-
+            state = FavoritesState(contentState = ContentState.Success(previewFavoriteMovies)),
+            onIntent = {}
         )
     }
 }
@@ -425,12 +424,8 @@ private fun FavoritesDarkPreview() {
 private fun FavoritesLightPreview() {
     FimlyTheme(darkTheme = false) {
         FavoritesContent(
-            state = dummyFavoritesSuccessState,
-            onMovieClick = {},
-            onRemoveFavoriteClick = {},
-            onRetryClick = {},
-            onClearAllClick= {},
-
+            state = FavoritesState(contentState = ContentState.Success(previewFavoriteMovies)),
+            onIntent = {}
         )
     }
 }
@@ -440,12 +435,8 @@ private fun FavoritesLightPreview() {
 private fun FavoritesEmptyPreview() {
     FimlyTheme(darkTheme = true) {
         FavoritesContent(
-            state = FavoritesState(contentState = FavoritesContentState.Empty),
-            onMovieClick = {},
-            onRemoveFavoriteClick = {},
-            onRetryClick = {},
-            onClearAllClick= {},
-
+            state = FavoritesState(contentState = ContentState.Empty),
+            onIntent = {}
         )
     }
 }
@@ -455,12 +446,8 @@ private fun FavoritesEmptyPreview() {
 private fun FavoritesLoadingPreview() {
     FimlyTheme(darkTheme = true) {
         FavoritesContent(
-            state = FavoritesState(contentState = FavoritesContentState.Loading),
-            onMovieClick = {},
-            onRemoveFavoriteClick = {},
-            onRetryClick = {},
-            onClearAllClick= {},
-
+            state = FavoritesState(contentState = ContentState.Loading),
+            onIntent = {}
         )
     }
 }
@@ -471,12 +458,9 @@ private fun FavoritesErrorPreview() {
     FimlyTheme(darkTheme = true) {
         FavoritesContent(
             state = FavoritesState(
-                contentState = FavoritesContentState.Error("Failed to read favorites from local storage.")
+                contentState = ContentState.Error("Failed to read favorites from local storage.")
             ),
-            onMovieClick = {},
-            onRemoveFavoriteClick = {},
-            onRetryClick = {},
-            onClearAllClick= {},
+            onIntent = {}
         )
     }
 }
