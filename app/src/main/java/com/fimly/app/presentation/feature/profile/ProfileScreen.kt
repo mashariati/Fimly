@@ -14,6 +14,11 @@ import androidx.compose.ui.Modifier
 fun ProfileScreen() {
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Text("Coming soon", modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
+        Text(
+            "Coming soon",
+            modifier = Modifier.align(Alignment.Center),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
